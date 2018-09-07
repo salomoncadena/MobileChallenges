@@ -6,6 +6,26 @@ import java.util.Scanner;
 
 public class TicTacToeGame {
 
+    public enum DifficultyLevel {Easy, Harder, Expert};
+
+    // Current difficulty level
+    private DifficultyLevel mDifficultyLevel = DifficultyLevel.Expert;
+
+    public DifficultyLevel getDifficultyLevel() {
+        return mDifficultyLevel;
+    }
+
+    public void setDifficultyLevel(DifficultyLevel difficultyLevel) {
+        mDifficultyLevel = difficultyLevel;
+        if (difficultyLevel==DifficultyLevel.Easy)
+            System.out.println("***************** EASY ****************");
+        else if (difficultyLevel==DifficultyLevel.Harder)
+            System.out.println("***************** HARDER ****************");
+        else
+            System.out.println("***************** EXPERT ****************");
+
+    }
+
     private char mBoard[] = {'1','2','3','4','5','6','7','8','9'};
     public static final int BOARD_SIZE = 9;
 
@@ -87,7 +107,7 @@ public class TicTacToeGame {
         return 1;
     }
 
-    public int getComputerMove()
+    public int getComputerMoveBasic()
     {
         int move;
 
@@ -127,8 +147,94 @@ public class TicTacToeGame {
         System.out.println("(RANDOM) Computer is moving to " + (move + 1));
 
         mBoard[move] = COMPUTER_PLAYER;
+
         return move;
     }
+
+    public int getRandomMove(){
+
+        int move;
+
+        do
+        {
+            move = mRand.nextInt(BOARD_SIZE);
+        } while (mBoard[move] != OPEN_SPOT);
+
+        System.out.println("(RANDOM) Computer is moving to " + (move + 1));
+
+        mBoard[move] = COMPUTER_PLAYER;
+
+        return move;
+    }
+
+    public int getWinningMove(){
+
+        int move;
+
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            if (mBoard[i] == OPEN_SPOT) {
+                mBoard[i] = COMPUTER_PLAYER;
+                if (checkForWinner() == 3) {
+                    System.out.println("(WIN) Computer is moving to " + (i + 1));
+                    return i;
+                }
+                else
+                    mBoard[i] = OPEN_SPOT;
+            }
+        }
+
+        return -1;
+    }
+
+    public int getBlockingMove(){
+
+        int move;
+
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            if (mBoard[i] == OPEN_SPOT) {
+                mBoard[i] = HUMAN_PLAYER;
+                if (checkForWinner() == 2) {
+                    mBoard[i] = COMPUTER_PLAYER;
+                    System.out.println("(BLOCK) Computer is moving to " + (i + 1));
+                    return i;
+                }
+                else
+                    mBoard[i] = OPEN_SPOT;
+            }
+        }
+        return -1;
+    }
+
+    public int getComputerMove()
+    {
+        int move = -1;
+
+        if (mDifficultyLevel == DifficultyLevel.Easy)
+            {
+                move = getRandomMove();
+                System.out.println("################ EASY ###############");
+            }
+        else if (mDifficultyLevel == DifficultyLevel.Harder) {
+            System.out.println("################ HARDER ###############");
+            move = getWinningMove();
+            if (move == -1)
+                move = getRandomMove();
+        }
+        else if (mDifficultyLevel == DifficultyLevel.Expert) {
+            System.out.println("################ EXPERT ###############");
+            // Try to win, but if that's not possible, block.
+            // If that's not possible, move anywhere.
+            move = getWinningMove();
+            if (move == -1)
+                move = getBlockingMove();
+            if (move == -1)
+                move = getRandomMove();
+        }
+
+        return move;
+    }
+
+
     public void clearBoard(){
         for (int i = 0; i < BOARD_SIZE; i++) {
             mBoard[i] = OPEN_SPOT;
