@@ -249,7 +249,7 @@ public class TicTacToeGame {
      * @param location - The location (0-8) to place the move
      */
 
-    public void setMove(char player, int location){
+    /*public void setMove(char player, int location){
         if (player == HUMAN_PLAYER){
             mBoard[location] = HUMAN_PLAYER;
         }else{
@@ -257,6 +257,24 @@ public class TicTacToeGame {
         }
 
 
+    }*/
+    public boolean setMove(char player, int location) {
+
+        // If input data is valid...
+        if( (location >= 0 && location < BOARD_SIZE) &&
+                (player == HUMAN_PLAYER || player == COMPUTER_PLAYER) ) {
+
+            mBoard[location] = player;
+            return true;
+
+        } else {
+            return false;
+        }
+    }
+
+
+    public char getBoardOccupant(int i) {
+        return mBoard[i];
     }
 
 
