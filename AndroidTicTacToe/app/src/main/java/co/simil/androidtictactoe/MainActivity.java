@@ -3,6 +3,7 @@ package co.simil.androidtictactoe;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.support.v7.app.AppCompatActivity;
@@ -41,9 +42,51 @@ public class MainActivity extends AppCompatActivity {
 
     //game results
     private int mAndroidWon, mHumanWon, mTie;
+    private char mGoFirst;
 
     MediaPlayer mHumanMediaPlayer;
     MediaPlayer mComputerMediaPlayer;
+
+    private SharedPreferences mPrefs;
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putCharArray("board", mGame.getBoardState());
+        outState.putBoolean("mGameOver", mGameOver);
+        outState.putInt("mHumanWins", Integer.valueOf(mHumanWon));
+        outState.putInt("mComputerWins", Integer.valueOf(mAndroidWon));
+        outState.putInt("mTies", Integer.valueOf(mTie));
+        outState.putCharSequence("info", mInfoTextView.getText());
+        outState.putChar("mGoFirst", mGoFirst);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+
+        mGame.setBoardState(savedInstanceState.getCharArray("board"));
+        mGameOver = savedInstanceState.getBoolean("mGameOver");
+        mInfoTextView.setText(savedInstanceState.getCharSequence("info"));
+        mHumanWon = savedInstanceState.getInt("mHumanWins");
+        mAndroidWon = savedInstanceState.getInt("mComputerWins");
+        mTie = savedInstanceState.getInt("mTies");
+        mGoFirst = savedInstanceState.getChar("mGoFirst");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        // Save the current scores
+        SharedPreferences.Editor ed = mPrefs.edit();
+        ed.putInt("mHumanWon", mHumanWon);
+        ed.putInt("mAndroidWon", mAndroidWon);
+        ed.putInt("mTie", mTie);
+        ed.commit();
+    }
+
 
     @Override
     protected void onResume() {
@@ -173,9 +216,16 @@ public class MainActivity extends AppCompatActivity {
 
         mmHumanTurn = false;
 
-        mAndroidWon=0;
+        mPrefs = getSharedPreferences("ttt_prefs", MODE_PRIVATE);
+
+        // Restore the scores
+        mHumanWon = mPrefs.getInt("mHumanWon", 0);
+        mAndroidWon = mPrefs.getInt("mAndroidWon", 0);
+        mTie = mPrefs.getInt("mTie", 0);
+
+        /*mAndroidWon=0;
         mHumanWon=0;
-        mTie=0;
+        mTie=0;*/
 
         mGame = new TicTacToeGame();
         mBoardView = (BoardView) findViewById(R.id.board);
@@ -186,10 +236,26 @@ public class MainActivity extends AppCompatActivity {
         mTextViewHumanWon = findViewById(R.id.textViewHumanWon);
         mTextViewTie = findViewById(R.id.textViewTiesWon);
 
-        startNewGame();
+//        startNewGame();
 
         // Listen for touches on the board
         mBoardView.setOnTouchListener(mTouchListener);
+
+        if (savedInstanceState == null) {
+            startNewGame();
+        }
+        else {
+            // Restore the game's state
+            mGame.setBoardState(savedInstanceState.getCharArray("board"));
+            mGameOver = savedInstanceState.getBoolean("mGameOver");
+            mInfoTextView.setText(savedInstanceState.getCharSequence("info"));
+            mHumanWon = savedInstanceState.getInt("mHumanWon");
+            mAndroidWon = savedInstanceState.getInt("mAndroidWon");
+            mTie = savedInstanceState.getInt("mTie");
+            mGoFirst = savedInstanceState.getChar("mGoFirst");
+        }
+        displayScores();
+
 
     }
 
@@ -229,6 +295,21 @@ public class MainActivity extends AppCompatActivity {
         mInfoTextView.setTextColor(Color.parseColor("#17202A"));
 
     }    // End of startNewGame
+
+    private void reset() {
+        mHumanWon = 0;
+        mAndroidWon = 0;
+        mTie = 0;
+        displayScores();
+    }
+
+
+
+    private void displayScores() {
+        mTextViewAndroidWon.setText(String.valueOf(mAndroidWon));
+        mTextViewHumanWon.setText(String.valueOf(mHumanWon));
+        mTextViewTie.setText(String.valueOf(mTie));
+    }
 
     // Handles clicks on the game board buttons
     private class ButtonClickListener implements View.OnClickListener {
@@ -351,6 +432,8 @@ public class MainActivity extends AppCompatActivity {
                     mAndroidWon++;
                     mGameOver = true;
                 }
+
+                displayScores();
 
             }
             mTextViewAndroidWon.setText(String.valueOf(mAndroidWon));

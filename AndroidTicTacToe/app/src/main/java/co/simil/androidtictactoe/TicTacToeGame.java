@@ -277,6 +277,14 @@ public class TicTacToeGame {
         return mBoard[i];
     }
 
+    public void setBoardState(char[] newState) {
+        mBoard = newState;
+    }
+
+    public char[] getBoardState() {
+        return mBoard;
+    }
+
 
 }
 
