@@ -3,6 +3,7 @@ package co.simil.androidtictactoe;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.media.MediaPlayer;
@@ -23,7 +24,7 @@ import static java.lang.System.*;
 
 public class MainActivity extends AppCompatActivity {
 
-    static final int DIALOG_DIFFICULTY_ID = 0;
+    //static final int DIALOG_DIFFICULTY_ID = 0;
     static final int DIALOG_QUIT_ID = 1;
 
     private BoardView mBoardView;
@@ -48,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
     MediaPlayer mComputerMediaPlayer;
 
     private SharedPreferences mPrefs;
+
+    private  boolean mSoundOn;
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
@@ -105,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    @Override
+    /*@Override
     protected Dialog onCreateDialog(int id) {
         Dialog dialog = null;
         final int selected;
@@ -175,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return dialog;
-    }
+    }*/
 
 
     @Override
@@ -196,8 +199,12 @@ public class MainActivity extends AppCompatActivity {
             case R.id.new_game:
                 startNewGame();
                 return true;
-            case R.id.ai_difficulty:
-                showDialog(DIALOG_DIFFICULTY_ID);
+            case R.id.settings:
+                startActivityForResult(new Intent(this, Settings.class), 0);
+                return true;
+
+            case R.id.reset_scores:
+                reset();
                 return true;
             case R.id.quit:
                 showDialog(DIALOG_QUIT_ID);
@@ -210,36 +217,43 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         mmHumanTurn = false;
 
         mPrefs = getSharedPreferences("ttt_prefs", MODE_PRIVATE);
+        mGame = new TicTacToeGame();
+        mBoardView = (BoardView) findViewById(R.id.board);
+        mBoardView.setGame(mGame);
+
+        // Listen for touches on the board
+        mBoardView.setOnTouchListener(mTouchListener);
+
+        //text
+        mInfoTextView = findViewById(R.id.information);
+        mTextViewAndroidWon = findViewById(R.id.textViewAndroidWon);
+        mTextViewHumanWon = findViewById(R.id.textViewHumanWon);
+        mTextViewTie = findViewById(R.id.textViewTiesWon);
 
         // Restore the scores
         mHumanWon = mPrefs.getInt("mHumanWon", 0);
         mAndroidWon = mPrefs.getInt("mAndroidWon", 0);
         mTie = mPrefs.getInt("mTie", 0);
 
-        /*mAndroidWon=0;
-        mHumanWon=0;
-        mTie=0;*/
+        // Restore the scores from the persistent preference data source
+        mSoundOn = mPrefs.getBoolean("sound", true);
+        String difficultyLevel = mPrefs.getString("difficulty_level", "Harder");
 
-        mGame = new TicTacToeGame();
-        mBoardView = (BoardView) findViewById(R.id.board);
-        mBoardView.setGame(mGame);
+        if (difficultyLevel.equals(getResources().getString(R.string.difficulty_easy)))
+            mGame.setDifficultyLevel(TicTacToeGame.DifficultyLevel.Easy);
 
-        mInfoTextView = findViewById(R.id.information);
-        mTextViewAndroidWon = findViewById(R.id.textViewAndroidWon);
-        mTextViewHumanWon = findViewById(R.id.textViewHumanWon);
-        mTextViewTie = findViewById(R.id.textViewTiesWon);
+        else if (difficultyLevel.equals(getResources().getString(R.string.difficulty_harder)))
+            mGame.setDifficultyLevel(TicTacToeGame.DifficultyLevel.Harder);
 
-//        startNewGame();
+        else
+            mGame.setDifficultyLevel(TicTacToeGame.DifficultyLevel.Expert);
 
-        // Listen for touches on the board
-        mBoardView.setOnTouchListener(mTouchListener);
 
         if (savedInstanceState == null) {
             startNewGame();
@@ -255,8 +269,28 @@ public class MainActivity extends AppCompatActivity {
             mGoFirst = savedInstanceState.getChar("mGoFirst");
         }
         displayScores();
+    }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
+        if (requestCode == RESULT_CANCELED) {
+            // Apply potentially new settings
+
+            mSoundOn = mPrefs.getBoolean("sound", true);
+
+            String difficultyLevel = mPrefs.getString("difficulty_level",
+                    getResources().getString(R.string.difficulty_harder));
+
+            if (difficultyLevel.equals(getResources().getString(R.string.difficulty_easy)))
+                mGame.setDifficultyLevel(TicTacToeGame.DifficultyLevel.Easy);
+
+            else if (difficultyLevel.equals(getResources().getString(R.string.difficulty_harder)))
+                mGame.setDifficultyLevel(TicTacToeGame.DifficultyLevel.Harder);
+
+            else
+                mGame.setDifficultyLevel(TicTacToeGame.DifficultyLevel.Expert);
+        }
     }
 
     // Set up the game board.
@@ -349,7 +383,9 @@ public class MainActivity extends AppCompatActivity {
                     mGaming = false;}
                 else if (winner == 2){
                     //mInfoTextView.setText("You won!");
-                    mInfoTextView.setText(R.string.result_human_wins);
+                    String defaultMessage = getResources().getString(R.string.result_human_wins);
+
+                    mInfoTextView.setText(mPrefs.getString("victory_message", defaultMessage));
                     mInfoTextView.setTextColor(Color.parseColor("#196F3D"));
                     mHumanWon++;
                     mGaming = false;}
